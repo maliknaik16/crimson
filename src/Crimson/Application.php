@@ -89,18 +89,4 @@ class Application {
     return $this->handler_class;
   }
 
-  /**
-   * Get class arguments.
-   */
-  public function getClassArgs() {
-    return $this->class_args;
-  }
-
-  /**
-   * Get the route args.
-   */
-  public function getRouteArgs() {
-    return $this->route_args;
-  }
-
 }
