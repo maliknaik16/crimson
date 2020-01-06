@@ -1,0 +1,26 @@
+{
+  "name": "malik/crimson",
+  "type": "library",
+  "description": "A PHP Library to handle the HTTP and WebSocket requests.",
+  "keywords": ["server", "php", "http", "websocket", "tornado"],
+  "license": "GPL-3.0-only",
+  "homepage": "https://github.com/maliknaik16/crimson",
+  "authors": [
+    {
+      "name": "Malik Naik",
+      "email": "maliknaik16@gmail.com",
+      "homepage": "http://maliknaik.me/",
+      "role": "Developer"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Crimson\\": "src/"
+    }
+  },
+  "require": {
+    "react/http": "^0.8.5",
+    "react/socket": "^1.3.0",
+    "guzzlehttp/psr7": "^1.0"
+  }
+}
