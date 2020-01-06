@@ -1,9 +1,9 @@
 {
   "name": "malik/crimson",
   "type": "library",
-  "description": "A PHP Library to handle the HTTP and WebSocket requests.",
+  "description": "A PHP Library to handle the HTTP requests.",
   "keywords": ["server", "php", "http", "websocket", "tornado"],
-  "license": "GPL-3.0-only",
+  "license": "GPL-2.0-only",
   "homepage": "https://github.com/maliknaik16/crimson",
   "authors": [
     {
