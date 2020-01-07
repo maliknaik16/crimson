@@ -4,19 +4,14 @@ namespace Crimson;
 
 /**
  * @file
- * Contains Http Server class.
+ * Contains HttpServer class.
  */
 
 use React\Http\Server;
 use React\Socket\Server as Socket;
 use React\Http\Response;
 use React\EventLoop\Factory;
-
 use Psr\Http\Message\ServerRequestInterface;
-
-use Symfony\Component\Routing\Exception\ResourceNotFoundException;
-
-use function GuzzleHttp\Psr7\parse_query;
 
 /**
  * Responsible for the creation of the HTTP server.
@@ -31,23 +26,23 @@ class HttpServer {
   protected $loop;
 
   /**
-   * The EventLoop.
+   * The Socket server.
    *
    * @var \React\Socket\Server
    */
   protected $socket;
 
   /**
-   * The EventLoop.
+   * The Http server.
    *
    * @var \React\Http\Server
    */
   protected $server;
 
   /**
-   * The Application.
+   * The App.
    *
-   * @var \ReactRequest\Application
+   * @var \Crimson\App
    */
   protected $app;
 
@@ -59,11 +54,52 @@ class HttpServer {
    */
   protected $tls_options;
 
-  public function __construct(Application $app, $tls_options = [], $address = '127.0.0.1', $port = 80) {
+  /**
+   * Initialize the Http server.
+   *
+   * @param \Crimson\App $app
+   *   The application object.
+   * @param array $tls_options
+   *   The TLS options for the server.
+   * @param string $address
+   *   The address of the server.
+   * @param int $port
+   *   The port number.
+   */
+  public function __construct(App $app, array $tls_options = [], $address = '127.0.0.1', $port = 80) {
 
     $this->loop = Factory::create();
+    $this->tls_options = $this->getTlsOptions($tls_options);
 
+    try {
+
+      if ($app == NULL) {
+        throw new \Exception('The App class is not initialized.');
+      } else {
+        $this->app = $app;
+      }
+
+      $this->socket = new Socket($address . ':' . $port, $this->loop, $this->tls_options);
+      $this->server = new Server(function (ServerRequestInterface $request) {
+        return $this->handleRequest($request);
+      });
+
+    } catch (\Exception $e) {
+      echo 'Caught Exception: ' . $e->getMessage() . PHP_EOL;
+    }
+  }
+
+  /**
+   * Returns the tls options.
+   *
+   * @param array $tls_options
+   *   The tls options.
+   *
+   * @return array
+   */
+  public function getTlsOptions(array $tls_options) {
     $tls_opts = [];
+
     if (is_array($tls_options) && !empty($tls_options)) {
 
       // The address must have tls:// scheme in order to work.
@@ -76,101 +112,90 @@ class HttpServer {
       }
     }
 
-    $this->tls_options = $tls_opts;
+    return $tls_opts;
+  }
+
+  /**
+   * Handles the incoming requests.
+   *
+   * @param Psr\Http\Message\ServerRequestInterface $request
+   *   The request object.
+   *
+   * @return React\Http\Response
+   */
+  public function handleRequest(ServerRequestInterface $request) {
+    $matched = $this->app->match($request);
+
+    if($matched === FALSE) {
+      return new Response(404, [], 'Page not found.');
+    }
+
+    $handler = $this->app->getHandler();
 
     try {
-
-      if($app == null) {
-        throw new \Exception('The Application class is not initialized.');
-      }else{
-        $this->app = $app;
+      if (is_string($handler)) {
+        throw new \Exception($handler);
       }
-
-      $this->socket = new Socket($address . ':' . $port, $this->loop, $this->tls_options);
-      $this->server = new Server(function (ServerRequestInterface $request) {
-        //return $this->handleRequest($request);
-        /*$route = $this->app->getRouteParameters();
-
-        if($route instanceof Response) {
-          return $route;
-        }*/
-
-        $this->app->match($request);
-
-        try {
-          $handler = $this->app->getHandler();
-
-          if(is_string($handler)) {
-            throw new \Exception($handler);
-          }
-
-          //$handler->setArguments($this->app->getClassArgs());
-
-          $method = strtolower($request->getMethod());
-
-          $handler->initialize();
-          $handler->prepare();
-
-          if(!$handler->hasFinished()) {
-            if($method == 'get') {
-              $handler->get();
-            }else if($method == 'post') {
-              $handler->post();
-            }else if($method == 'head') {
-              $handler->head();
-            }else if($method == 'delete') {
-              $handler->delete();
-            }else if($method == 'patch') {
-              $handler->patch();
-            }else if($method == 'put') {
-              $handler->put();
-            }else if($method == 'options') {
-              $handler->options();
-            }
-
-            if(!$handler->hasFinished()) {
-              $handler->setDefaultHeaders();
-              $handler->onFinish();
-            }
-
-            $response = $handler->finish();
-          }
-
-          if(!is_null($response)) {
-            return $response;
-          }
-        }catch(\Exception $e) {
-          echo 'Caught Exception: ' . $e->getMessage() . PHP_EOL;
-        }
-
-        return new Response(404);
-      });
     }catch(\Exception $e) {
       echo 'Caught Exception: ' . $e->getMessage() . PHP_EOL;
     }
+
+    $method = strtolower($request->getMethod());
+    $handler->initialize();
+
+    if (!$handler->hasFinished()) {
+      $handler->prepare();
+    }
+
+    if (!$handler->hasFinished()) {
+      if ($method == 'get') {
+        $handler->get();
+      } elseif ($method == 'post') {
+        $handler->post();
+      } elseif ($method == 'head') {
+        $handler->head();
+      } elseif ($method == 'delete') {
+        $handler->delete();
+      } elseif ($method == 'patch') {
+        $handler->patch();
+      } elseif ($method == 'put') {
+        $handler->put();
+      } elseif ($method == 'options') {
+        $handler->options();
+      }
+
+      if (!$handler->hasFinished()) {
+        $handler->setDefaultHeaders();
+        $handler->onFinish();
+      }
+    }
+
+    if(!$handler->hasFinished()) {
+      $handler->finish();
+    }
+
+    $response = $handler->finish();
+
+    if (!is_null($response)) {
+      return $response;
+    }
+
+    return new Response(404);
   }
 
-  public function handleRequest(ServerRequestInterface $request) {
-    return new Response(200, [], 'Hello, World');
-  }
-
+  /**
+   * Starts listening to the socket and runs the Event loop.
+   */
   public function start() {
     $this->server->listen($this->socket);
     $this->loop->run();
   }
 
+  /**
+   * Stops the Event loop.
+   */
   public function stop() {
     $this->loop->stop();
-  }
-
-  /**
-   * The route match function.
-   */
-  public function match($path) {
-    $context = new RequestContext;
-    $matcher = new UrlMatcher($this->app->routes, $context);
-
-    return $matcher->match($path);
   }
 
 }
