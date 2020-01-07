@@ -5,7 +5,7 @@ on top of [ReactPHP](https://reactphp.org/).
 # Installation
 The ``crimson`` can be installed using composer via the following command:
 ```bash
-composer require malik/crimson:dev-master
+composer require malik/crimson:^1.0.0
 ```
 
 # Usage
