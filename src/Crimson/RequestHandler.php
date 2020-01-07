@@ -37,44 +37,54 @@ abstract class RequestHandler {
   protected $status_code;
 
   /**
-   * The response status code.
+   * The response message.
    *
    * @var string
    */
   protected $message;
 
   /**
-   * Has the finished function invoked.
+   * Stores boolean value whether finish() method is invoked.
    *
-   * @var boolean
+   * @var bool
    */
   protected $finished;
 
   /**
    * The arguments for the constructor of the request handler.
+   *
+   * @var array
    */
   private $class_args;
 
   /**
-   * The arguments for the constructor of the request handler.
+   * The route arguments.
+   *
+   * @var array
    */
   private $route_args;
 
   /**
-   * Initialize the Web Thing Server.
+   * Initialize the object.
+   *
+   * @param \Psr\Http\Message\ServerRequestInterface $request
+   *   The request object.
+   * @param array $class_args
+   *   The class arguments.
    */
-  public final function __construct(ServerRequestInterface $request, $class_args = []) {
+  final public function __construct(ServerRequestInterface $request, array $class_args = []) {
     $this->request = $request;
-    $this->status_code = 200;
+    $this->status_code = 500;
     $this->headers = [];
-    $this->finished = false;
+    $this->finished = FALSE;
     $this->message = '';
     $this->class_args = $class_args;
   }
 
   /**
    * First method to be called when the request is received.
-   * Override this method to initialize data.
+   *
+   * Override this method to initialize instead of __construct().
    */
   public function initialize() {
   }
@@ -97,107 +107,133 @@ abstract class RequestHandler {
   /**
    * Terminate the request.
    */
-  public final function finish() {
-    $this->finished = true;
+  final public function finish() {
+    $this->finished = TRUE;
     return new Response($this->status_code, $this->headers, $this->message);
   }
 
   /**
-   * Called after the end of a request.
+   * Returns whether finish() method is invoked/called.
    */
-  public final function hasFinished() {
+  final public function hasFinished() {
     return $this->finished;
   }
 
   /**
    * Redirects to the specified url.
+   *
+   * @param string $url
+   *   The url to redirect to.
+   * @param bool $permanent
+   *   Whether to redirect temporarily or permanently.
+   * @param int $status_code
+   *   The status code for the response.
    */
-  public final function redirect($url, $permanent = false, $status_code = 302) {
-    if(count($this->headers) > 0) {
+  final public function redirect($url, $permanent = FALSE, $status_code = 302) {
+    if (count($this->headers) > 0) {
       throw new \Exception('Cannot redirect when the headers are already written.');
     }
 
-    if($status_code == 302) {
+    if ($status_code == 302) {
       $status_code = $permanent ? 301 : 302;
     }
 
-    if(!($status_code >= 300 && $status_code <= 399)) {
+    if (!($status_code >= 300 && $status_code <= 399)) {
       throw new \Exception('The status code for the redirect must be between 300 and 399 inclusive.');
     }
 
-    $this->setStatusCode($status_code);
+    $this->setStatus($status_code);
     $this->setHeader('Location', $url);
     $this->finish();
   }
 
   /**
-   * Handles the GET request.
+   * Clears all the response headers.
+   */
+  final public function clearHeaders() {
+    $this->headers = [];
+  }
+
+  /**
+   * Override this method to handle request with GET request method.
    */
   public function get() {
   }
 
   /**
-   * Handles the HEAD request.
+   * Override this method to handle request with HEAD request method.
    */
   public function head() {
   }
 
   /**
-   * Handles the POST request.
+   * Override this method to handle request with POST request method.
    */
   public function post() {
   }
 
   /**
-   * Handles the DELETE request.
+   * Override this method to handle request with DELETE request method.
    */
   public function delete() {
   }
 
   /**
-   * Handles the PATCH request.
+   * Override this method to handle request with PATCH request method.
    */
   public function patch() {
   }
 
   /**
-   * Handles the PUT request.
+   * Override this method to handle request with PUT request method.
    */
   public function put() {
   }
 
   /**
-   * Handles the OPTIONS request.
+   * Override this method to handle request with OPTIONS request method.
    */
   public function options() {
   }
 
   /**
-   * Sets the Query and Symfony's route related arguments/parameters.
+   * Sets the route arguments.
+   *
+   * @param array $args
+   *   The route arguments to set.
    */
   public function setRouteArgs(array $args) {
     $this->route_args = $args;
   }
 
   /**
-   * Returns the arguments
+   * Returns the route arguments.
+   *
+   * @return array
    */
-  public final function getRouteArgs() {
+  final public function getRouteArgs() {
     return $this->route_args;
   }
 
   /**
-   * Returns the arguments
+   * Returns the arguments passed to the constructor of the handler.
+   *
+   * @return array
    */
-  public final function getClassArgs() {
+  final public function getClassArgs() {
     return $this->class_args;
   }
 
   /**
-   * HTTPError
+   * Sends an 5xx error message.
+   *
+   * @param int $status_code
+   *   The status code to return.
+   * @param string $msg
+   *   The message to return in response.
    */
-  public final function sendError($status_code = 500, $msg = '') {
-    $this->setStatusCode($status_code);
+  final public function sendError($status_code = 500, $msg = '') {
+    $this->setStatus($status_code);
     $this->message = $msg;
     $this->finish();
   }
@@ -205,54 +241,72 @@ abstract class RequestHandler {
   /**
    * Returns the request object.
    *
-   * @return \React\Http\ServerRequestInterface
+   * @return \React\Http\ServerRequestInterface $request
+   *   The request object.
    */
-  public final function getRequest() {
+  final public function getRequest() {
     return $this->request;
   }
 
   /**
-   * Returns the query
+   * Returns the query.
    */
-  public final function getQuery() {
+  final public function getQuery() {
     return $this->request->getUri()->getQuery();
   }
 
   /**
-   * Sets the headers for the request.
+   * Called after the request method function is executed.
+   *
+   * Override this method to set headers for the response.
    */
   public function setDefaultHeaders() {
   }
 
   /**
-   * Sets the headers for the response
+   * Sets the header for the response. Replaces the header value if the header
+   * name already exists.
+   *
+   * @param string $name
+   *   The header name.
+   * @param string|array $value
+   *   The header value.
    */
-  public final function setHeader($name, $value) {
-    if(array_key_exists($name, $this->headers)) {
+  final public function setHeader($name, $value) {
+    if (array_key_exists($name, $this->headers)) {
       $this->headers[$name] = $value;
-    }else{
-      $this->headers += [$name => $value];
+    } else {
+      $this->headers = array_merge($this->headers, [$name => $value]);
     }
   }
 
   /**
    * Sets the status code for the response.
+   *
+   * @param int $status_code
+   *   The status code.
    */
-  public final function setStatusCode($status_code) {
+  final public function setStatus($status_code) {
     $this->status_code = $status_code;
   }
 
   /**
    * Returns the status code for the response.
+   *
+   * @return int
    */
-  public final function getStatusCode() {
+  final public function getStatus() {
     return $this->status_code;
   }
 
   /**
    * Responds with the given message.
+   *
+   * @param mixed|string $message
+   *   The response message.
    */
-  public final function write($message) {
+  final public function write($message) {
     $this->message = $message;
   }
+
 }
