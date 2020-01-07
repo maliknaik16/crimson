@@ -125,9 +125,10 @@ class HttpServer {
    */
   public function handleRequest(ServerRequestInterface $request) {
     $matched = $this->app->match($request);
+    $notfound = new Response(404, [], '404 Page not found.');
 
-    if($matched === FALSE) {
-      return new Response(404, [], 'Page not found.');
+    if ($matched === FALSE) {
+      return $notfound;
     }
 
     $handler = $this->app->getHandler();
@@ -162,6 +163,8 @@ class HttpServer {
         $handler->put();
       } elseif ($method == 'options') {
         $handler->options();
+      } else {
+        $handler->httpMethod();
       }
 
       if (!$handler->hasFinished()) {
@@ -170,7 +173,7 @@ class HttpServer {
       }
     }
 
-    if(!$handler->hasFinished()) {
+    if (!$handler->hasFinished()) {
       $handler->finish();
     }
 
@@ -180,7 +183,7 @@ class HttpServer {
       return $response;
     }
 
-    return new Response(404);
+    return $notfound;
   }
 
   /**

@@ -105,11 +105,27 @@ abstract class RequestHandler {
   }
 
   /**
-   * Terminate the request.
+   * When this method is called in initialize() or prepare() method then the
+   * response is retured. If this method is called in any of the request methods
+   * then the setDefaultHeaders() and onFinish() methods are not invoked and the
+   * response is returned.
+   *
+   * @return bool|React\Http\Response
    */
   final public function finish() {
+    if ($this->finished == TRUE) {
+      return new Response($this->status_code, $this->headers, $this->message);
+    }
     $this->finished = TRUE;
-    return new Response($this->status_code, $this->headers, $this->message);
+  }
+
+  /**
+   * Sets the Content-Type header.
+   *
+   * @param string $content_type
+   */
+  final public function setContentType($content_type) {
+    $this->setHeader('Content-Type', $content_type);
   }
 
   /**
@@ -194,6 +210,13 @@ abstract class RequestHandler {
    * Override this method to handle request with OPTIONS request method.
    */
   public function options() {
+  }
+
+  /**
+   * Override this method to handle request with the request method that is
+   * not defined in this class.
+   */
+  public function httpMethod() {
   }
 
   /**
