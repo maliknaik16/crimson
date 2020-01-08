@@ -90,7 +90,7 @@ $server = new HttpServer($app, [], '127.0.0.1', '8080');
 $server->start();
 ```
 
-For more examples, check the `examples/` directory in this repository.
+For more examples, check the [examples/](https://github.com/maliknaik16/crimson/tree/master/examples) directory in this repository.
 
 # License
 GNU General Public License v2.0
