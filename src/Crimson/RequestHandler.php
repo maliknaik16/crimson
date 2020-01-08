@@ -248,16 +248,16 @@ abstract class RequestHandler {
   }
 
   /**
-   * Sends an 5xx error message.
+   * Sends an 5xx or 4xx error message.
    *
    * @param int $status_code
    *   The status code to return.
    * @param string $msg
    *   The message to return in response.
    */
-  final public function sendError($status_code = 500, $msg = '') {
+  final public function sendError($status_code = 500, $msg = 'Unknown') {
     $this->setStatus($status_code);
-    $this->message = $msg;
+    $this->message = 'HTTP ' . $status_code . ': ' . $msg;
     $this->finish();
   }
 
