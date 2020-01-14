@@ -9,6 +9,7 @@ namespace Crimson;
 
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Response;
+use React\EventLoop\Factory;
 
 /**
  * The Base class for HTTP request handlers.
@@ -330,6 +331,25 @@ abstract class RequestHandler {
    */
   final public function write($message) {
     $this->message = $message;
+  }
+
+  /**
+   * Sets the Event loop.
+   *
+   * @return void
+   */
+  final public function setLoop($loop) {
+    $this->loop = $loop;
+  }
+
+  /**
+   * Responds the Event loop.
+   *
+   * @return React\EventLoop\Factory
+   *   The Event Loop.
+   */
+  final public function getLoop() {
+    return $this->loop;
   }
 
 }
