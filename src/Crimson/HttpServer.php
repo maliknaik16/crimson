@@ -66,9 +66,14 @@ class HttpServer {
    * @param int $port
    *   The port number.
    */
-  public function __construct(App $app, array $tls_options = [], $address = '127.0.0.1', $port = 80) {
+  public function __construct(App $app, array $tls_options = [], $address = '127.0.0.1', $port = 80, $loop = NULL) {
 
-    $this->loop = Factory::create();
+    if($loop === NULL) {
+      $this->loop = Factory::create();
+    }else{
+      $this->loop = $loop;
+    }
+
     $this->tls_options = $this->getTlsOptions($tls_options);
 
     try {
@@ -142,6 +147,7 @@ class HttpServer {
     }
 
     $method = strtolower($request->getMethod());
+    $handler->setLoop($this->loop);
     $handler->initialize();
 
     if (!$handler->hasFinished()) {
